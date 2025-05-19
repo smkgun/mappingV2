@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>경기도 진영차이 시계열 지도 v3 (시계열 정렬)</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary-color: #2c5282;
+      --secondary-color: #4299e1;
+      --accent-color: #ebf8ff;
+      --text-color: #2d3748;
+      --light-gray: #f7fafc;
+      --gray: #e2e8f0;
+      --dark-gray: #a0aec0;
+      --white: #ffffff;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      --transition: all 0.25s ease;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      color: var(--text-color);
+      background-color: var(--light-gray);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--primary-color), #1a365d);
+      color: var(--white);
+      padding: 24px 0;
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--secondary-color), #63b3ed);
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+
+    .logo-area {
+      margin-bottom: 12px;
+    }
+
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+      border-radius: 8px;
+      display: inline-block;
+      border: 2px solid rgba(255,255,255,0.3);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .logo::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      animation: shine 3s infinite;
+    }
+
+    @keyframes shine {
+      0% { left: -100%; }
+      20% { left: 100%; }
+      100% { left: 100%; }
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      text-align: center;
+      margin: 0;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      opacity: 0.9;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .control-panel {
+      background-color: var(--white);
+      padding: 20px;
+      margin: 16px 0;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .control-section {
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: var(--primary-color);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .year-button {
+      padding: 10px 20px;
+      border-radius: 6px;
+      background-color: var(--accent-color);
+      color: var(--primary-color);
+      border: 1px solid var(--secondary-color);
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      flex: 1;
+      min-width: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .year-button:hover {
+      background-color: #dbeafe;
+      transform: translateY(-2px);
+    }
+
+    .year-button.active {
+      background-color: var(--secondary-color);
+      color: var(--white);
+      box-shadow: 0 2px 4px rgba(66, 153, 225, 0.3);
+    }
+
+    .slider-container {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .slider-wrap {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      min-width: 280px;
+      gap: 12px;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      height: 6px;
+      appearance: none;           /* 표준 */
+      -webkit-appearance: none;   /* Safari/Chrome */
+      -moz-appearance: none;      /* Firefox */
+      width: 100%;
+      border-radius: 5px;
+      background: var(--gray);
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--secondary-color);
+      cursor: pointer;
+      box-shadow: 0 0 0 4px rgba(66, 153, 225, 0.2);
+      transition: var(--transition);
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      background: var(--primary-color);
+      box-shadow: 0 0 0 6px rgba(66, 153, 225, 0.3);
+    }
+
+    .year-navigation {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .nav-button {
+      background-color: var(--white);
+      border: 1px solid var(--gray);
+      color: var(--primary-color);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: var(--transition);
+    }
+
+    .nav-button:hover {
+      background-color: var(--accent-color);
+      transform: scale(1.05);
+    }
+
+    .nav-button:disabled {
+      color: var(--dark-gray);
+      background-color: var(--light-gray);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .year-label {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary-color);
+      min-width: 90px;
+      text-align: center;
+    }
+
+    .map-container {
+      position: relative;
+      width: 100%;
+      height: 650px;
+      margin: 0 auto 24px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background-color: var(--white);
+    }
+
+    .map-frame {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      visibility: hidden;
+    }
+
+    .map-frame.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .legend {
+      background-color: var(--white);
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .legend-title {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: var(--primary-color);
+    }
+
+    .color-scale {
+      display: flex;
+      width: 100%;
+      height: 24px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .scale-segment {
+      flex: 1;
+    }
+
+    .scale-progressive {
+      background: linear-gradient(90deg, #2166ac, #67a9cf, #d1e5f0);
+    }
+
+    .scale-middle {
+      background-color: #f7f7f7;
+      border-left: 1px solid #ddd;
+      border-right: 1px solid #ddd;
+    }
+
+    .scale-conservative {
+      background: linear-gradient(90deg, #fddbc7, #ef8a62, #b2182b);
+    }
+
+    .scale-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      color: var(--text-color);
+    }
+
+    .footer {
+      padding: 20px 0;
+      text-align: center;
+      font-size: 14px;
+      color: var(--dark-gray);
+      border-top: 1px solid var(--gray);
+      margin-top: 20px;
+    }
+
+    .info-panel {
+      background-color: var(--white);
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .info-title {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-content {
+      font-size: 14px;
+      color: var(--text-color);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 20px;
+      }
+
+      .subtitle {
+        font-size: 14px;
+      }
+
+      .logo {
+        font-size: 24px;
+      }
+
+      .control-panel {
+        padding: 16px;
+      }
+
+      .button-group {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .year-button {
+        flex: 1;
+        min-width: 80px;
+        padding: 8px 12px;
+        font-size: 14px;
+      }
+
+      .slider-container {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .slider-wrap {
+        min-width: unset;
+      }
+
+      .year-navigation {
+        justify-content: center;
+      }
+
+      .map-container {
+        height: 450px;
+      }
+
+      .year-label {
+        font-size: 18px;
+        min-width: 70px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 18px;
+      }
+
+      .subtitle {
+        font-size: 13px;
+      }
+
+      .logo {
+        font-size: 20px;
+        padding: 6px 12px;
+      }
+
+      .button-group {
+        justify-content: center;
+      }
+
+      .map-container {
+        height: 350px;
+      }
+      @media (max-width: 768px) {
+      .legend {
+        width: 90% !important;
+        margin: 0 auto 24px;
+        }
+      .scale-labels {
+        font-size: 12px;
+        flex-direction: row;
+        justify-content: space-between;
+        }
+      }
+      @media (max-width: 480px) {
+      .legend {
+        width: 95% !important;
+        padding: 12px;
+        }
+      .scale-labels {
+        font-size: 11px;
+        }
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">Insight Data LAB</div>
+    <div class="subtitle">경기도 진영차이 시계열 비교 지도<br>(교육감 → 도지사 → 대통령 선거를 연도순으로 재정렬)</div>
+  </header>
+  <div class="container">
+    <div class="control-panel">
+      <div class="button-group">
+        <button class="year-button active" data-year="0">2010년 경기교육감</button>
+<button class="year-button" data-year="1">2010년 경기도지사</button>
+<button class="year-button" data-year="2">2012년 대통령</button>
+<button class="year-button" data-year="3">2014년 경기교육감</button>
+<button class="year-button" data-year="4">2014년 경기도지사</button>
+<button class="year-button" data-year="5">2017년 대통령</button>
+<button class="year-button" data-year="6">2018년 경기교육감</button>
+<button class="year-button" data-year="7">2018년 경기도지사</button>
+<button class="year-button" data-year="8">2022년 대통령</button>
+<button class="year-button" data-year="9">2022년 경기교육감</button>
+<button class="year-button" data-year="10">2022년 경기도지사</button>
+
+      </div>
+      <div class="slider-container">
+        <input type="range" id="yearSlider" min="0" max="10" value="0" />
+        <div id="yearLabel" style="font-weight:700; color:#2c5282;">2010년 경기교육감</div>
+      </div>
+    </div>
+    <div class="map-container" id="mapContainer">
+      <iframe id="map0" src="경기도_진영차이_2010.html" class="map-frame active" allowfullscreen></iframe>
+<iframe id="map1" src="경기도지사_진영차이_2010.html" class="map-frame" allowfullscreen></iframe>
+<iframe id="map2" src="대통령선거_진영차이_2012.html" class="map-frame" allowfullscreen></iframe>
+<iframe id="map3" src="경기도_진영차이_2014.html" class="map-frame" allowfullscreen></iframe>
+<iframe id="map4" src="경기도지사_진영차이_2014.html" class="map-frame" allowfullscreen></iframe>
+<iframe id="map5" src="대통령선거_진영차이_2017.html" class="map-frame" allowfullscreen></iframe>
+<iframe id="map6" src="경기도_진영차이_2018.html" class="map-frame" allowfullscreen></iframe>
+<iframe id="map7" src="경기도지사_진영차이_2018.html" class="map-frame" allowfullscreen></iframe>
+<iframe id="map8" src="대통령선거_진영차이_2022.html" class="map-frame" allowfullscreen></iframe>
+<iframe id="map9" src="경기도_진영차이_2022.html" class="map-frame" allowfullscreen></iframe>
+<iframe id="map10" src="경기도지사_진영차이_2022.html" class="map-frame" allowfullscreen></iframe>
+
+    </div>
+  </div>
+
+  <div class="legend">
+      <div class="legend-title">득표 차이 범례</div>
+      <div class="color-scale">
+        <div class="scale-segment scale-progressive"></div>
+        <div class="scale-segment scale-middle"></div>
+        <div class="scale-segment scale-conservative"></div>
+      </div>
+      <div class="scale-labels">
+        <span>진보 우세</span>
+        <span>균형</span>
+        <span>보수 우세</span>
+      </div>
+    </div>
+  </div>
+
+  <h2>💡 Insight Data LAB의 해석 (v2)</h2>
+  <div class="insight-box">
+    <ul>
+      <li><strong>고착 지역 vs 스윙 지역 식별</strong>: 예를 들어 수원·성남·안양 일부는 교육감, 지사, 대통령선거에서 모두 진보 우세를 보이며 정치 성향이 일관된 반면, 용인·화성·김포 등은 선거 유형과 시기에 따라 선택이 달라지는 <em>스윙 지역</em>으로 분류됩니다.</li>
+      <li><strong>선거별 진영 일치율 변화</strong>: 2010년대 초에는 교육감과 다른 선거의 성향 일치율이 낮았지만, 2022년에는 교육감과 도지사, 대통령 선거에서 유사한 진보/보수 구도가 나타나 <em>정당 지형과 교육정책 선택의 연계성</em>이 높아졌습니다.</li>
+      <li><strong>중간지대 확장 지역 포착</strong>: 고양시, 안산시 등은 득표차이가 줄어들며 <em>정치적 중도화</em> 또는 다핵화된 민심 흐름을 보여주고 있어, 정책 메시지 설계 시 보다 <em>유연한 프레이밍</em>이 요구됩니다.</li>
+      <li><strong>전략적 메시지 설계 필요</strong>: 진보·보수 구도가 엇갈리는 지역일수록 <em>정책 이슈 기반의 선거 전략</em>이 유효하며, 지역 맞춤형 슬로건, 교육 프레임 설계가 중요합니다.</li>
+    </ul>
+  </div>
+</body>
+
+  <footer class="footer">
+    <div class="container">
+      &copy; 2025 ⓒInsight Data LAB by Carl | 모든 데이터는 공식 선거 결과를 기반으로 합니다
+    </div>
+  </footer>
+  <script>
+    const yearLabels = ["2010년 경기교육감", "2010년 경기도지사", "2012년 대통령", "2014년 경기교육감", "2014년 경기도지사", "2017년 대통령", "2018년 경기교육감", "2018년 경기도지사", "2022년 대통령", "2022년 경기교육감", "2022년 경기도지사"];
+    const mapFrames = document.querySelectorAll('.map-frame');
+    const buttons = document.querySelectorAll('.year-button');
+    const slider = document.getElementById('yearSlider');
+    const yearLabel = document.getElementById('yearLabel');
+
+    function updateMap(index) {
+      mapFrames.forEach((f, i) => {
+        f.classList.toggle('active', i == index);
+      });
+      buttons.forEach((b, i) => {
+        b.classList.toggle('active', i == index);
+      });
+      slider.value = index;
+      yearLabel.innerText = yearLabels[index];
+    }
+
+    buttons.forEach((btn, i) => {
+      btn.addEventListener('click', () => updateMap(i));
+    });
+
+    slider.addEventListener('input', () => {
+      updateMap(Number(slider.value));
+    });
+
+    updateMap(0);
+  </script>
+</body>
+</html>
